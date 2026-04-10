@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home AI Assistant</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
+  #chat-container { max-width: 600px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  #messages { max-height: 400px; overflow-y: auto; margin-bottom: 10px; }
+  .message { padding: 10px; margin: 5px 0; border-radius: 5px; }
+  .user { background: #d1e7ff; text-align: right; }
+  .assistant { background: #e2e2e2; text-align: left; }
+  input[type=text] { width: 60%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+  button { padding: 10px 20px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; margin-left: 5px; }
+</style>
+</head>
+<body>
+<div id="chat-container">
+  <div id="messages"></div>
+  <input type="text" id="user-input" placeholder="Type your command..." />
+  <button onclick="sendMessage()">Send</button>
+  <button id="voice-btn">🎤 Voice</button>
+  <audio id="output" controls style="display:none;"></audio>
+</div>
+
+<script>
+const outputAudio = document.getElementById('output');
+
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage(message, 'user');
+  input.value = '';
+
+  try {
+    const response = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: message })
+    });
+    const data = await response.json();
+    addMessage(data.result || data.error || "No response", 'assistant');
+  } catch (err) {
+    addMessage("Error: " + err.message, 'assistant');
+  }
+}
+
+function addMessage(text, sender) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ' + sender;
+  div.textContent = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// Voice input
+const voiceBtn = document.getElementById('voice-btn');
+voiceBtn.addEventListener('click', async () => {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Microphone access not supported");
+    return;
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const mediaRecorder = new MediaRecorder(stream);
+  let chunks = [];
+
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(chunks, { type: 'audio/wav' });
+    chunks = [];
+    const formData = new FormData();
+    formData.append('file', blob, 'input.wav');
+
+    try {
+      const res = await fetch('/voice', { method: 'POST', body: formData });
+      const data = await res.json();
+      addMessage(data.transcript, 'user');
+      addMessage(data.response, 'assistant');
+
+      outputAudio.src = data.audio_file;
+      outputAudio.style.display = 'block';
+      outputAudio.play();
+    } catch (err) {
+      addMessage("Voice Error: " + err.message, 'assistant');
+    }
+  };
+
+  mediaRecorder.start();
+  voiceBtn.disabled = true;
+  voiceBtn.textContent = "Recording...";
+  setTimeout(() => {
+    mediaRecorder.stop();
+    voiceBtn.disabled = false;
+    voiceBtn.textContent = "🎤 Voice";
+  }, 5000); // Record 5 seconds
+});
+
+// Allow Enter key to send
+document.getElementById('user-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+</body>
+</html> 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home AI Assistant</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
+  #chat-container { max-width: 600px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  #messages { max-height: 400px; overflow-y: auto; margin-bottom: 10px; }
+  .message { padding: 10px; margin: 5px 0; border-radius: 5px; }
+  .user { background: #d1e7ff; text-align: right; }
+  .assistant { background: #e2e2e2; text-align: left; }
+  input[type=text] { width: 80%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+  button { padding: 10px 20px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="chat-container">
+  <div id="messages"></div>
+  <input type="text" id="user-input" placeholder="Type your command..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage(message, 'user');
+  input.value = '';
+
+  try {
+   
+    const response = await fetch('http://192.168.1.136:8000/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: message })
+});
+
+    const data = await response.json();
+    addMessage(data.result || "No response", 'assistant');
+  } catch (err) {
+    addMessage("Error: " + err.message, 'assistant');
+  }
+}
+
+function addMessage(text, sender) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ' + sender;
+  div.textContent = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// Allow Enter key to send
+document.getElementById('user-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+</body>
+</html>

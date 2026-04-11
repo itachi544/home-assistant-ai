@@ -10,7 +10,7 @@ from ddgs import DDGS
 from tavily import TavilyClient
 
 # -------------------- Config --------------------
-OLLAMA_IP = "http://192.168.1.136:11434"
+OLLAMA_IP = "localhost:8000"
 MODEL_NAME = "gemma4:e4b"
 CHROMA_DB_PATH = "./chroma_db"
 

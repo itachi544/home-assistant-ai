@@ -14,7 +14,7 @@ OLLAMA_IP = "http://192.168.1.136:11434"
 MODEL_NAME = "gemma4:e4b"
 CHROMA_DB_PATH = "./chroma_db"
 
-TAVILY_API_KEY = "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"
+TAVILY_API_KEY = "YOUR_API_KEY"
 tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
 # Initialize the explicit client for network stability
